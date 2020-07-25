@@ -1,0 +1,19 @@
+{
+  "name": "oz-upgradeable-wallets",
+  "version": "1.0.0",
+  "description": "",
+  "main": "networks.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "dotenv": "^8.2.0",
+    "truffle-hdwallet-provider": "^1.0.17"
+  },
+  "dependencies": {
+    "@openzeppelin/cli": "^2.7.2",
+    "@openzeppelin/contracts": "^2.5.0"
+  }
+}
