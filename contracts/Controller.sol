@@ -19,7 +19,7 @@ contract Controller is Initializable {
   function changeDailyLimit(uint256 _newDailyLimit) public returns (bool){
       dailyLimit = _newDailyLimit;
   }
-  function increase(uint256 amount) public {
-      value += amount;
-  }
+  // function increase(uint256 amount) public {
+  //     value += amount;
+  // }
 }

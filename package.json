@@ -1,19 +1,22 @@
 {
-  "name": "oz-upgradeable-wallets",
+  "name": "embrace",
   "version": "1.0.0",
   "description": "",
   "main": "networks.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "Aleksa Stojanović",
   "license": "ISC",
   "devDependencies": {
-    "dotenv": "^8.2.0",
-    "truffle-hdwallet-provider": "^1.0.17"
+    "dotenv": "^8.2.0"
   },
   "dependencies": {
     "@openzeppelin/cli": "^2.7.2",
-    "@openzeppelin/contracts": "^2.5.0"
+    "@openzeppelin/contract-loader": "^0.6.1",
+    "@openzeppelin/contracts": "^2.5.0",
+    "@openzeppelin/upgrades": "^2.8.0",
+    "@truffle/hdwallet-provider": "^1.0.37-next.1",
+    "web3": "^1.2.9"
   }
 }
