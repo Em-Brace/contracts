@@ -24,6 +24,12 @@ contract Controller is Initializable {
       _;
     )
   }
+  modifier isChild(){
+    require(
+      msg.sender == child, "Only child can perform this operation");
+      _;
+    )
+  }
   function initialize(address _parent, address _child, uint256 _dailyLimit, address _token) public initializer {
       parent = _parent;
       child = _child;
@@ -37,11 +43,17 @@ contract Controller is Initializable {
       dailyLimit = _newDailyLimit;
       emit DailyLimitChanged(previousLimit, _newDailyLimit);
   }
-  // there is no need for rejection of additional spending; 
+  // there is no need for rejection of additional spending;
+  // this needs to be modified -> if resources are on Controller.sol 
   function approveAdditionalSpending(uint256 amount) public isParent return (bool){
       bool success = tokenInstance.approve(child, amount);
       emit SpendingApproved(child, amount);
       return sucess
+  }
+  // spend with idea that resources are on Controller
+  function spend(uint256 amount, address destination) public isChild{
+      uint256 balance = tokenInstance.balanceOf(address(this));
+      bool success = tokenInstance.safeTransfer(destination, balance);
   }
 
 }
