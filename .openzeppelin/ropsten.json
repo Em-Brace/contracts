@@ -1,0 +1,9 @@
+{
+  "contracts": {},
+  "solidityLibs": {},
+  "proxies": {},
+  "manifestVersion": "2.2",
+  "app": {
+    "address": "0x836b24FdC42a451eD35022990024D068c224607b"
+  }
+}
