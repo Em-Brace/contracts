@@ -30,13 +30,14 @@ contract Controller is Initializable {
       dailyLimit = _dailyLimit;
       tokenInstance = _token;
   }
+  function() external payable{}
   function changeDailyLimit(uint256 _newDailyLimit) public isParent {
       require(_newDailyLimit !< 0, 'No need to set negative limit; 0 is enough');
       uint256 previousLimit = dailyLimit;
       dailyLimit = _newDailyLimit;
       emit DailyLimitChanged(previousLimit, _newDailyLimit);
-       
   }
+  // there is no need for rejection of additional spending; 
   function approveAdditionalSpending(uint256 amount) public isParent return (bool){
       bool success = tokenInstance.approve(child, amount);
       emit SpendingApproved(child, amount);
