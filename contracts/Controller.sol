@@ -19,7 +19,8 @@ contract Controller is Initializable {
   address public parent;
   address public child;
   uint256 public _dailyLimit;
-  uint256 beginning;
+  uint256 initialBeginning;
+  uint256 initialEnding;
   Transaction[] public transactions;
   IERC20 public tokenInstance;
   event DailyLimitChanged(uint256 previousLimit, uint256 newLimit);
@@ -38,26 +39,43 @@ contract Controller is Initializable {
     );
     _;
   }
-  // modifier canSpend(){
-  //   require(
-
-  //   )
-  // }
-  function initialize(address _parent, address _child, uint256 _dailyLimit, address _token, uint256 _beginning) public initializer {
+  // maybe this should not be modifier in order for request for additionalSpending to occur automatically;
+  modifier isUnderDailyLimit(){
+    require(
+      checkTodaysSpending() < _dailyLimit, "Daily limit is exceeded"
+    )
+  }
+  function initialize(address _parent, address _child, uint256 _dailyLimit, address _token, uint256 _beginning) public initializer{
       parent = _parent;
       child = _child;
       dailyLimit = _dailyLimit;
       tokenInstance = _token;
       beginning = _beginning;
+      ending = beginning.add(1 days);
   }
   function() external payable{}
 
-  function clearStaleTransactions(uint 256 beginning, uint256 ending){
+  function clearStaleTransactions(uint 256 todaysBeginning, uint256 todaysEnding){
     for(uint256 i = 0; i < transactions.length; i++){
-      if(transactions[i].timestamp >= beginning && transactions[i].timestamp <= ending) delete transactions[i];
+      if(transactions[i].timestamp >= todaysBeginning && transactions[i].timestamp <= todaysEnding) delete transactions[i];
     }
   }
-  function changeDailyLimitGeneral(uint256 _newDailyLimit) public isParent {
+  function getTodaysBeginning(uint256 currentTimestamp) public returns (uint256){
+    uint256 currentDay = (currentTimestamp - currentTimestamp.mod(1 days)).divide(initialBeginning);
+    return currentDay;
+  }
+  function checkTodaysSpending() public returns (uint256){
+    uint256 from = getTodaysBeginning(now);
+    uint256 to = from.add(1 days);
+    uint256 spending = 0;
+    for(uint256 i = 0; i < transactions.length; i++){
+      if(transactions[i].timestamp >= from && transactions[i].timestamp <= to){
+        limit.add(transactions[i].amount);
+      }
+    }
+    return spending;
+  }
+  function changeDailyLimitGeneral(uint256 _newDailyLimit) public isParent{
       require(_newDailyLimit !< 0, 'No need to set negative limit; 0 is enough');
       uint256 previousLimit = dailyLimit;
       dailyLimit = _newDailyLimit;
@@ -70,8 +88,8 @@ contract Controller is Initializable {
   //     dailyLimitConcrete.add(amount);
   //     event AdditionalSpendingForTodayApproved(address childAddress, uint256 amount);
   // }
-  function spend(uint256 amount, address destination) public isChild, isParent {
-      // if()
+  function spend(uint256 amount, address destination) public isChild, isParent{
+      this.clearStaleTransactions();
       uint256 balance = tokenInstance.balanceOf(address(this));
       require(balance >= amount , 'Not enough balance');
       require(spentSoFar <= dailyLimitConcrete, 'Approval of additional resources should be requested');
@@ -81,9 +99,6 @@ contract Controller is Initializable {
         emit SpendingHappend(address(this), destination, balance);
       }
       else revert;    
-  }
-    function spend(uint256 amount, address destination) public isChild, isParent {
-
   }
 
 }
