@@ -6,21 +6,16 @@ import "../node_modules/@openzeppelin/upgrades/contracts/Initializable.sol";
 import "../node_modules/@openzeppelin/contracts/math/Math.sol";
 import "../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 
-// I need to understand how to dynamically calculate dailylimit everytime;
 contract Controller is Initializable {
 
+  using SafeMath for uint256;
   struct Transaction {
     uint256 timestamp;
     uint256 amount;
   }
-
-  using SafeMath for uint256;
-
   address public parent;
   address public child;
-  uint256 public _dailyLimit;
-  uint256 initialBeginning;
-  uint256 initialEnding;
+  uint256 public dailyLimit;
   Transaction[] public transactions;
   IERC20 public tokenInstance;
   event DailyLimitChanged(uint256 previousLimit, uint256 newLimit);
@@ -39,66 +34,62 @@ contract Controller is Initializable {
     );
     _;
   }
-  // maybe this should not be modifier in order for request for additionalSpending to occur automatically;
-  modifier isUnderDailyLimit(){
-    require(
-      checkTodaysSpending() < _dailyLimit, "Daily limit is exceeded"
-    )
-  }
+  // might not be modifier, in order to implement delayed transactions and parents signature when limit in violated ( all in one transaction )
+  // modifier isBelowDailyLimit(){
+  //   require(
+  //     todaysSpending() < dailyLimit, "Daily limit is exceeded"
+  //   );
+  //   _;
+  // }
   function initialize(address _parent, address _child, uint256 _dailyLimit, address _token, uint256 _beginning) public initializer{
       parent = _parent;
       child = _child;
       dailyLimit = _dailyLimit;
       tokenInstance = _token;
-      beginning = _beginning;
-      ending = beginning.add(1 days);
   }
   function() external payable{}
 
-  function clearStaleTransactions(uint 256 todaysBeginning, uint256 todaysEnding){
-    for(uint256 i = 0; i < transactions.length; i++){
-      if(transactions[i].timestamp >= todaysBeginning && transactions[i].timestamp <= todaysEnding) delete transactions[i];
-    }
+  function todayExcact() public view returns (uint256){
+      return now;
   }
-  function getTodaysBeginning(uint256 currentTimestamp) public returns (uint256){
-    uint256 currentDay = (currentTimestamp - currentTimestamp.mod(1 days)).divide(initialBeginning);
-    return currentDay;
+  function todaysBeginning() public view returns (uint256){
+      return now - (now % 1 days);
   }
-  function checkTodaysSpending() public returns (uint256){
-    uint256 from = getTodaysBeginning(now);
-    uint256 to = from.add(1 days);
-    uint256 spending = 0;
-    for(uint256 i = 0; i < transactions.length; i++){
-      if(transactions[i].timestamp >= from && transactions[i].timestamp <= to){
-        limit.add(transactions[i].amount);
+  function todaysEnding() public view returns (uint256){
+      return this.todaysBeginning() + 1 days;
+  }
+  function todaysSpending() public view returns (uint256){
+      uint256 beginning = this.todaysBeginning();
+      uint256 ending = this.todaysEnding();
+      uint256 spending = 0;
+      for(uint256 i = 0; i < transactions.length; i++){
+        if(transactions[i].timestamp >= beginning && transactions[i].timestamp <= ending){
+          spending += (transactions[i].amount);
+        }
       }
-    }
-    return spending;
+      return spending;
   }
-  function changeDailyLimitGeneral(uint256 _newDailyLimit) public isParent{
-      require(_newDailyLimit !< 0, 'No need to set negative limit; 0 is enough');
-      uint256 previousLimit = dailyLimit;
-      dailyLimit = _newDailyLimit;
-      emit DailyLimitChanged(previousLimit, _newDailyLimit);
+  function clearNonTodaysSpending() internal returns (bool){
+      uint256 beginning = this.todaysBeginning();
+      uint256 ending = this.todaysEnding();
+      for(uint256 i = 0; i < transactions.length; i++){
+        if(transactions[i].timestamp >= beginning && transactions[i].timestamp <= ending) {
+            delete transactions[i];   
+        }
+      }
   }
-  // function approveAdditionalSpendingForToday(uint256 amount) public isParent return (bool) {
-  //     uint256 balance = tokenInstance.balanceOf(address(this));
-  //     require(amount != 0, 'Null not allowed');
-  //     require(balance > amount, 'You approved additional spending for today, but there is not enough balance for `spend` to occur');
-  //     dailyLimitConcrete.add(amount);
-  //     event AdditionalSpendingForTodayApproved(address childAddress, uint256 amount);
-  // }
-  function spend(uint256 amount, address destination) public isChild, isParent{
-      this.clearStaleTransactions();
+  function spend(uint256 amount, address destination) public isChild isParent returns (bool){
+      this.clearNonTodaysSpending();
       uint256 balance = tokenInstance.balanceOf(address(this));
       require(balance >= amount , 'Not enough balance');
-      require(spentSoFar <= dailyLimitConcrete, 'Approval of additional resources should be requested');
-      spentSoFar.add(amount);
+      require(this.todaysSpending() >= amount)
       bool success = tokenInstance.safeTransfer(destination, balance);
       if(success){
         emit SpendingHappend(address(this), destination, balance);
+        Transaction storage latest = new Transaction({timestamp: now, amount: amount});
+        transactions.push(latest)
       }
-      else revert;    
+      else return false;    
   }
 
 }
