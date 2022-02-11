@@ -14,7 +14,7 @@
   "dependencies": {
     "@openzeppelin/cli": "^2.7.2",
     "@openzeppelin/contract-loader": "^0.6.1",
-    "@openzeppelin/contracts": "^2.5.0",
+    "@openzeppelin/contracts": "^4.4.2",
     "@openzeppelin/upgrades": "^2.8.0",
     "@truffle/hdwallet-provider": "^1.0.37-next.1",
     "moment": "^2.27.0",
